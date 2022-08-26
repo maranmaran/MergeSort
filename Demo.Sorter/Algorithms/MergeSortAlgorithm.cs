@@ -3,7 +3,7 @@
 namespace Demo.Sorter.Algorithms;
 
 /// <summary>
-/// Merge sort implementation
+/// Top-down merge sort implementation
 /// </summary>
 /// <para>Time complexity O(nlogn) - we divide in two halves and have linear merge</para>
 /// <para>Space complexity O(n) - because we need to store elements</para>
@@ -21,6 +21,9 @@ internal sealed class MergeSortAlgorithm<T> : ISortAlgorithm<T>
         return MergeSort(arr, 0, arr.Length - 1);
     }
 
+    /// <summary>
+    /// Implements merge sort, divide and conquer
+    /// </summary>
     private static T[] MergeSort(T[] arr, int start, int end)
     {
         if (end - start + 1 <= 1)
@@ -29,11 +32,14 @@ internal sealed class MergeSortAlgorithm<T> : ISortAlgorithm<T>
             return arr;
         }
 
+        // produce mid
         var mid = start + (end - start) / 2;
 
+        // process halves
         MergeSort(arr, start, mid);
         MergeSort(arr, mid + 1, end);
 
+        // merge
         Merge(ref arr, start, mid, end);
 
         return arr;
@@ -44,6 +50,7 @@ internal sealed class MergeSortAlgorithm<T> : ISortAlgorithm<T>
         var left = start;
         var right = mid + 1;
 
+        // fill buffer
         var idx = 0;
         var sortedArray = new T[end - start + 1];
 
