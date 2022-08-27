@@ -1,7 +1,9 @@
 using System.Collections;
 using System.Reflection;
 using Demo.Sorter.Algorithms;
+using Demo.Sorter.Extensions;
 using Demo.Sorter.Implementations;
+using Demo.Sorter.Interfaces;
 using Xunit;
 
 namespace Demo.SorterTests;
@@ -9,24 +11,9 @@ namespace Demo.SorterTests;
 public class ArraySorterTests
 {
     [Fact]
-    public void Sorter_Default_IsMergeSort()
-    {
-        var mergeSortAlgorithmType = typeof(MergeSortAlgorithm<>).GetGenericTypeDefinition();
-
-        var sut = new IntArraySorter();
-
-        var prop = sut.GetType().BaseType?.GetField("_algorithm", BindingFlags.Instance | BindingFlags.NonPublic);
-        var value = prop?.GetValue(sut)?.GetType();
-
-        Assert.NotNull(value);
-        Assert.True(value!.IsGenericType);
-        Assert.Equal(mergeSortAlgorithmType, value.GetGenericTypeDefinition());
-    }
-
-    [Fact]
     public void Sorter_NullInput_ThrowsArgumentNullException()
     {
-        var sut = new IntArraySorter();
+        var sut = ArraySorter<int>.Instance;
 
         Assert.Throws<ArgumentNullException>(() => sut.Sort(null));
     }
@@ -34,9 +21,7 @@ public class ArraySorterTests
     [Fact]
     public void Sorter_BasicInput_Sorts()
     {
-        var sut = new IntArraySorter();
-
-        var resultArr = sut.Sort(new[] { 4, 3, 2, 1 });
+        var resultArr = new[] { 4, 3, 2, 1 }.Sort();
 
         AssertResult(new[] { 1, 2, 3, 4 }, resultArr, false);
     }
@@ -45,9 +30,7 @@ public class ArraySorterTests
     [ClassData(typeof(IntSorterTests))]
     public void Sorter_Default_Sorts(int[] testArr)
     {
-        var sut = new IntArraySorter();
-
-        var resultArr = sut.Sort(testArr);
+        var resultArr = testArr.Sort();
 
         AssertResult(testArr, resultArr);
     }
@@ -57,9 +40,7 @@ public class ArraySorterTests
     {
         var bigArr = SeedArray();
 
-        var sut = new IntArraySorter();
-
-        var resultArr = sut.Sort(bigArr);
+        var resultArr = bigArr.Sort();
 
         Array.Sort(bigArr);
 
@@ -78,6 +59,37 @@ public class ArraySorterTests
         }
 
         return arr;
+    }
+
+    [Fact]
+    public void Sorter_Default_IsMergeSort()
+    {
+        var mergeSortAlgorithmType = typeof(MergeSortAlgorithm<>).GetGenericTypeDefinition();
+
+        var sut = ArraySorter<int>.Instance;
+
+        var prop = sut.GetType().GetField("_algorithm", BindingFlags.Instance | BindingFlags.NonPublic);
+        var value = prop?.GetValue(sut)?.GetType();
+
+        Assert.NotNull(value);
+        Assert.True(value!.IsGenericType);
+        Assert.Equal(mergeSortAlgorithmType, value.GetGenericTypeDefinition());
+    }
+
+    [Fact]
+    public void ArraySorter_CustomSorter_Sorts()
+    {
+        var whoCameFirst = new IQuestion[]
+        {
+            new Egg(),
+            new Chicken()
+        };
+
+        var sorter = ArraySorter<IQuestion>.Instance.WithAlgorithm(new QuestionableTestAlgorithm());
+
+        whoCameFirst.Sort(sorter);
+
+        Assert.Equal(typeof(Chicken), whoCameFirst.First().GetType());
     }
 
     private static void AssertResult(int[] expected, int[] actual, bool evaluateRef = true)
@@ -106,4 +118,33 @@ public class IntSorterTests : IEnumerable<object[]>
     public IEnumerator<object[]> GetEnumerator() => _data.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+}
+
+public interface IQuestion : IComparable<IQuestion>
+{ }
+
+public class Chicken : IQuestion
+{
+    public int CompareTo(IQuestion other) => other.GetType().Name == "Chicken" ? 1 : -1;
+}
+
+public class Egg : IQuestion
+{
+    public int CompareTo(IQuestion other) => other.GetType().Name == "Chicken" ? 1 : -1;
+}
+
+public class QuestionableTestAlgorithm : ISortAlgorithm<IQuestion>
+{
+    public IQuestion[] Sort(IQuestion[] arr)
+    {
+        for (var i = 0; i < arr.Length - 1; i++)
+        {
+            if (arr[i].CompareTo(arr[i + 1]) > 0)
+            {
+                (arr[i + 1], arr[i]) = (arr[i], arr[i + 1]);
+            }
+        }
+
+        return arr;
+    }
 }

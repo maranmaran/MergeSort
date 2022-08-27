@@ -3,6 +3,11 @@
 /// <summary>
 /// Sorts arrays
 /// </summary>
-internal interface ISorter<T> : ISortAlgorithm<T>
+public interface ISorter<T> : ISortAlgorithm<T>
     where T : IComparable<T>
-{ }
+{
+    /// <summary>
+    /// Applies algorithm to the sorter
+    /// </summary>
+    ISorter<T> WithAlgorithm(ISortAlgorithm<T> algorithm);
+}
